@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcoBPF Enterprise Analytics</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg-main: #0B0F19;
+            --bg-panel: #111827;
+            --bg-panel-hover: #1F2937;
+            --border: #374151;
+            --text-primary: #F9FAFB;
+            --text-secondary: #9CA3AF;
+            --accent: #3B82F6;
+            --danger: #EF4444;
+            --warning: #F59E0B;
+            --success: #10B981;
+            --font-main: 'Inter', sans-serif;
+            --font-code: 'JetBrains Mono', monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            font-family: var(--font-main);
+            padding: 1.5rem;
+            min-height: 100vh;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .header h1::before {
+            content: '';
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            background: var(--accent);
+            border-radius: 2px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        input {
+            background: var(--bg-main);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-family: var(--font-code);
+            font-size: 0.9rem;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        button {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: #2563EB;
+        }
+
+        .status-badge {
+            padding: 0.4rem 0.8rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            background: rgba(55, 65, 81, 0.5);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--danger);
+        }
+
+        .status-badge.connected .status-dot {
+            background: var(--success);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 1.5rem;
+        }
+
+        .panel {
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.5rem;
+        }
+
+        .panel-header {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            font-family: var(--font-code);
+        }
+
+        .metric-unit {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            font-family: var(--font-main);
+            font-weight: 500;
+        }
+
+        .col-4 {
+            grid-column: span 4;
+        }
+
+        .col-8 {
+            grid-column: span 8;
+        }
+
+        .col-12 {
+            grid-column: span 12;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        th {
+            text-align: left;
+            padding: 0.75rem 1rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+            border-bottom: 1px solid var(--border);
+        }
+
+        td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border);
+            font-family: var(--font-code);
+        }
+
+        tbody tr:hover {
+            background: var(--bg-panel-hover);
+        }
+
+        /* Professional AI Section */
+        .ai-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 1.5rem;
+        }
+
+        .ai-card {
+            background: var(--bg-main);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 1rem;
+        }
+
+        .ai-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .ai-code-block {
+            background: #000;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 1rem;
+            font-family: var(--font-code);
+            font-size: 0.85rem;
+            color: #A78BFA;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            border: 1px solid;
+        }
+
+        .tag-critical {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+
+        .tag-warning {
+            background: rgba(245, 158, 11, 0.1);
+            border-color: var(--warning);
+            color: var(--warning);
+        }
+
+        .tag-good {
+            background: rgba(16, 185, 129, 0.1);
+            border-color: var(--success);
+            color: var(--success);
+        }
+
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* AI Chat Window */
+        .chat-container {
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            height: 400px;
+        }
+
+        .chat-header {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #A78BFA;
+        }
+
+        .chat-messages {
+            flex-grow: 1;
+            padding: 1rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .chat-msg {
+            max-width: 85%;
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            line-height: 1.5;
+        }
+
+        .msg-user {
+            align-self: flex-end;
+            background: rgba(59, 130, 246, 0.2);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            color: #E0F2FE;
+        }
+
+        .msg-ai {
+            align-self: flex-start;
+            background: rgba(139, 92, 246, 0.15);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            color: #EDE9FE;
+        }
+
+        .chat-input-area {
+            display: flex;
+            padding: 1rem;
+            border-top: 1px solid var(--border);
+            gap: 0.5rem;
+        }
+
+        .chat-input-area input {
+            flex-grow: 1;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header">
+        <h1>EcoBPF Enterprise Analytics</h1>
+        <div class="controls">
+            <input type="text" id="ipInput" placeholder="Agent IP" value="192.168.137.237">
+            <input type="text" id="portInput" placeholder="Port" value="8000" style="width: 80px;">
+            <button onclick="connectWS()">Connect</button>
+            <div class="status-badge" id="statusIndicator">
+                <div class="status-dot" id="statusDot"></div>
+                <span id="statusText">Disconnected</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid">
+        <!-- Core Metrics -->
+        <div class="panel col-4">
+            <div class="panel-header">Instantaneous Package Power</div>
+            <div class="metric-value" id="livePowerMetric">0.00 <span class="metric-unit">W</span></div>
+        </div>
+        <div class="panel col-4">
+            <div class="panel-header">Cumulative Energy Yield</div>
+            <div class="metric-value" id="totalEnergyMetric">0.00 <span class="metric-unit">J</span></div>
+        </div>
+        <div class="panel col-4">
+            <div class="panel-header">Active Profiler Probes</div>
+            <div class="metric-value" id="probeMetric">0 <span class="metric-unit">functions</span></div>
+        </div>
+
+        <!-- AI Engine -->
+        <div class="panel col-12" style="border-left: 3px solid var(--accent);">
+            <div class="panel-header">
+                <div>AI-Assisted Root Cause Analysis (OpenRouter Engine)</div>
+                <div id="aiStatusText"
+                    style="color: var(--accent); display: flex; align-items: center; gap: 0.5rem; font-size: 0.75rem;">
+                </div>
+            </div>
+
+            <div id="aiContent" style="color: var(--text-secondary); font-size: 0.9rem;">
+                Awaiting telemetry threshold triggers...
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="panel col-8">
+            <div class="panel-header">Power Draw Timeseries (W)</div>
+            <canvas id="powerChart" height="80"></canvas>
+        </div>
+
+        <div class="panel col-4">
+            <div class="panel-header">Function Energy Distribution</div>
+            <canvas id="energyChart" height="170"></canvas>
+        </div>
+
+        <div class="panel col-8">
+            <div class="panel-header">Process Symbol Attribution</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Target Symbol</th>
+                        <th>Energy (mJ)</th>
+                        <th>Execution Count</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="metricsTableBody">
+                    <tr>
+                        <td colspan="4" style="text-align:center; color: var(--text-secondary);">No data received</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- AI Chat -->
+        <div class="col-4 chat-container">
+            <div class="chat-header">
+                💬 Telemetry Co-Pilot
+            </div>
+            <div class="chat-messages" id="chatMessages">
+                <div class="chat-msg msg-ai">Hello! I am monitoring your C application. Ask me anything about its
+                    performance or request code optimization strategies.</div>
+            </div>
+            <div class="chat-input-area">
+                <input type="text" id="chatInput" placeholder="Ask about energy usage..."
+                    onkeypress="if(event.key === 'Enter') sendChatMessage()">
+                <button onclick="sendChatMessage()">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let ws;
+        let powerChartObj, energyChartObj;
+        let lastKnownData = null;
+        let aiUpdateInterval;
+
+        const MAX_POINTS = 60;
+        const timeLabels = Array(MAX_POINTS).fill('');
+        const powerData = Array(MAX_POINTS).fill(0);
+
+        Chart.defaults.color = '#9CA3AF';
+        Chart.defaults.font.family = "'Inter', sans-serif";
+        Chart.defaults.scale.grid.color = '#374151';
+
+        function initCharts() {
+            const ctxPower = document.getElementById('powerChart').getContext('2d');
+            powerChartObj = new Chart(ctxPower, {
+                type: 'line',
+                data: {
+                    labels: timeLabels,
+                    datasets: [{
+                        data: powerData,
+                        borderColor: '#3B82F6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        fill: true,
+                        tension: 0,
+                        pointRadius: 2, // Added points to the graph so values are visible
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    animation: false,
+                    scales: {
+                        y: { 
+                            beginAtZero: true,
+                            title: { display: true, text: 'Power Draw (Watts)', color: '#D1D5DB' }
+                        },
+                        x: { 
+                            title: { display: true, text: 'Time', color: '#D1D5DB' },
+                            grid: { display: false },
+                            ticks: { maxTicksLimit: 10 }
+                        }
+                    },
+                    plugins: { 
+                        legend: { display: false },
+                        tooltip: { mode: 'index', intersect: false }
+                    }
+                }
+            });
+
+            const ctxEnergy = document.getElementById('energyChart').getContext('2d');
+            energyChartObj = new Chart(ctxEnergy, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        data: [],
+                        backgroundColor: '#3B82F6'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    animation: false,
+                    indexAxis: 'y',
+                    scales: {
+                        x: { 
+                            beginAtZero: true,
+                            title: { display: true, text: 'Total Energy (mJ)', color: '#D1D5DB' }
+                        },
+                        y: {
+                            title: { display: true, text: 'Functions', color: '#D1D5DB' }
+                        }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        function updateUI(data) {
+            lastKnownData = data;
+
+            document.getElementById('livePowerMetric').innerHTML = `${data.total_power_w.toFixed(2)} <span class="metric-unit">W</span>`;
+            document.getElementById('totalEnergyMetric').innerHTML = `${(data.total_energy_mj / 1000).toFixed(2)} <span class="metric-unit">J</span>`;
+            document.getElementById('probeMetric').innerHTML = `${Object.keys(data.functions).length} <span class="metric-unit">functions</span>`;
+
+            // Generate a real timestamp for the X axis
+            const now = new Date();
+            const timeStr = `${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+            timeLabels.push(timeStr);
+            timeLabels.shift();
+
+            powerData.push(data.total_power_w);
+            powerData.shift();
+            powerChartObj.update();
+
+            const functions = Object.keys(data.functions);
+            const energyValues = [];
+            const labels = [];
+
+            const tbody = document.getElementById('metricsTableBody');
+            tbody.innerHTML = '';
+
+            functions.sort((a, b) => data.functions[b].energy_mJ - data.functions[a].energy_mJ);
+
+            functions.forEach((func, index) => {
+                const stats = data.functions[func];
+                labels.push(func);
+                energyValues.push(stats.energy_mJ);
+
+                let statusTag = '<span class="tag tag-good">NORMAL</span>';
+                if (index === 0 && stats.energy_mJ > 10000) statusTag = '<span class="tag tag-warning">ELEVATED</span>';
+                if (index === 0 && stats.energy_mJ > 50000) statusTag = '<span class="tag tag-critical">CRITICAL</span>';
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="color: #fff;">${func}</td>
+                    <td>${stats.energy_mJ.toFixed(2)}</td>
+                    <td>${stats.calls}</td>
+                    <td>${statusTag}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            energyChartObj.data.labels = labels;
+            energyChartObj.data.datasets[0].data = energyValues;
+
+            // Color the top bar red if it's consuming a lot
+            const bgColors = energyValues.map((v, i) => i === 0 && v > 50000 ? '#EF4444' : '#3B82F6');
+            energyChartObj.data.datasets[0].backgroundColor = bgColors;
+
+            if (energyValues.length > 0) energyChartObj.update();
+        }
+
+        async function analyzeWithAI() {
+            if (!lastKnownData) return;
+            const contentBox = document.getElementById('aiContent');
+            const statusBox = document.getElementById('aiStatusText');
+
+            statusBox.innerHTML = `<div class="spinner"></div> Processing telemetry...`;
+
+            const functionData = Object.keys(lastKnownData.functions).map(f => {
+                return `${f}: ${lastKnownData.functions[f].energy_mJ.toFixed(0)}mJ`;
+            }).join(', ');
+
+            const prompt = `You are an Enterprise AI Systems Engineer. Analyze this CPU energy telemetry: ${functionData}.
+Return ONLY a strictly formatted JSON object (no markdown formatting). Do not include backticks. Keys required:
+{
+  "target": "function name of the primary anomaly/energy consumer",
+  "status": "CRITICAL, WARNING, or STABLE",
+  "carbon_impact": "Estimate the environmental impact (e.g. 'High - 1.2g CO2 eq/hr')",
+  "analysis": "A highly professional, technical 2-sentence analysis of why this function is causing overhead.",
+  "mitigation": "Actionable enterprise-grade mitigation strategy (e.g., Thread pooling, SIMD, caching).",
+  "code_snippet": "Provide a 3-5 line C code snippet demonstrating the fix. Use // comments."
+}`;
+
+            try {
+                const ip = document.getElementById('ipInput').value;
+                const port = document.getElementById('portInput').value;
+
+                const response = await fetch(`http://${ip}:${port}/api/analyze`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: prompt })
+                });
+
+                const resJson = await response.json();
+                if (resJson.error) throw new Error(resJson.error);
+                if (!resJson.result) throw new Error("Empty AI response received.");
+
+                let rawString = resJson.result.replace(/```json/g, '').replace(/```/g, '').trim();
+
+                let aiData;
+                try {
+                    aiData = JSON.parse(rawString);
+                } catch (err) {
+                    throw new Error("Failed to parse Enterprise JSON structure.");
+                }
+
+                let tagClass = aiData.status.includes('CRITICAL') ? 'tag-critical' : (aiData.status.includes('WARNING') ? 'tag-warning' : 'tag-good');
+
+                const htmlUI = `
+                    <div class="ai-grid">
+                        <div>
+                            <div class="ai-card" style="margin-bottom: 1rem;">
+                                <div class="ai-label">Anomaly Target</div>
+                                <div style="font-family: var(--font-code); font-size: 1.1rem; color: #fff; margin-bottom: 0.5rem;">${aiData.target}</div>
+                                <span class="tag ${tagClass}">${aiData.status}</span>
+                            </div>
+                            <div class="ai-card">
+                                <div class="ai-label">Carbon Impact Assessment</div>
+                                <div style="color: var(--text-primary); font-size: 0.95rem;">${aiData.carbon_impact}</div>
+                            </div>
+                        </div>
+                        
+                        <div style="display: flex; flex-direction: column; gap: 1rem;">
+                            <div class="ai-card">
+                                <div class="ai-label">Root Cause Analysis</div>
+                                <div style="color: var(--text-primary); line-height: 1.5; font-size: 0.95rem;">${aiData.analysis}</div>
+                            </div>
+                            
+                            <div class="ai-card">
+                                <div class="ai-label">Proposed Mitigation</div>
+                                <div style="color: #60A5FA; font-weight: 500; margin-bottom: 0.8rem; font-size: 0.95rem;">${aiData.mitigation}</div>
+                                <div class="ai-code-block">${aiData.code_snippet}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                contentBox.innerHTML = htmlUI;
+                statusBox.innerHTML = `Last updated: ${new Date().toLocaleTimeString()}`;
+
+            } catch (e) {
+                statusBox.innerHTML = `<span style="color: var(--warning);">⚠ API Interrupted (${e.message})</span>`;
+
+                // Only overwrite the content box if it doesn't already have a valid analysis showing
+                if (!contentBox.innerHTML.includes('ai-grid')) {
+                    contentBox.innerHTML = `<span style='color: var(--danger);'>Diagnostics Unavailable:</span> ${e.message}. Retrying in 15 seconds...`;
+                }
+            }
+        }
+
+        async function sendChatMessage() {
+            const inputEl = document.getElementById('chatInput');
+            const userText = inputEl.value.trim();
+            if (!userText) return;
+
+            inputEl.value = '';
+            appendChatMessage(userText, 'user');
+
+            let functionData = "No telemetry yet.";
+            if (lastKnownData) {
+                functionData = Object.keys(lastKnownData.functions).map(f => {
+                    return `${f}: ${lastKnownData.functions[f].energy_mJ.toFixed(0)}mJ`;
+                }).join(', ');
+            }
+
+            const prompt = `You are an expert AI software engineer. Current C application telemetry: ${functionData}. 
+The user asks: "${userText}"
+Respond directly to the user in 1-3 sentences. Be highly technical, helpful, and concise. Do NOT output markdown or JSON. Just write the answer.`;
+
+            appendChatMessage("Thinking...", 'ai', 'loading-msg');
+
+            try {
+                const ip = document.getElementById('ipInput').value;
+                const port = document.getElementById('portInput').value;
+
+                const response = await fetch(`http://${ip}:${port}/api/analyze`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: prompt })
+                });
+
+                const resJson = await response.json();
+
+                const loadingMsg = document.getElementById('loading-msg');
+                if (loadingMsg) loadingMsg.remove();
+
+                if (resJson.error) {
+                    appendChatMessage(`API Error: ${resJson.error}`, 'ai');
+                    return;
+                }
+
+                if (!resJson.result) {
+                    appendChatMessage("Received empty response from OpenRouter.", 'ai');
+                    return;
+                }
+
+                // For the chat, we DO NOT parse JSON. We just render the raw string!
+                appendChatMessage(resJson.result.trim(), 'ai');
+
+            } catch (e) {
+                const loadingMsg = document.getElementById('loading-msg');
+                if (loadingMsg) loadingMsg.remove();
+                appendChatMessage(`System Notice: ${e.message}`, 'ai');
+            }
+        }
+
+        function appendChatMessage(text, sender, id = null) {
+            const container = document.getElementById('chatMessages');
+            const div = document.createElement('div');
+            div.className = `chat-msg msg-${sender}`;
+            if (id) div.id = id;
+
+            // Escape HTML safely
+            div.textContent = text;
+
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function connectWS() {
+            if (ws) ws.close();
+            if (aiUpdateInterval) clearInterval(aiUpdateInterval);
+
+            const ip = document.getElementById('ipInput').value;
+            const port = document.getElementById('portInput').value;
+            const wsUrl = `ws://${ip}:${port}/ws/telemetry`;
+
+            const statusDot = document.getElementById('statusDot');
+            const statusText = document.getElementById('statusText');
+            const statusContainer = document.getElementById('statusIndicator');
+
+            statusText.textContent = "Connecting";
+            statusContainer.classList.remove('connected');
+
+            try {
+                ws = new WebSocket(wsUrl);
+
+                ws.onopen = () => {
+                    statusContainer.classList.add('connected');
+                    statusText.textContent = "Live";
+
+                    setTimeout(analyzeWithAI, 1500);
+                    aiUpdateInterval = setInterval(analyzeWithAI, 15000);
+                };
+
+                ws.onmessage = (event) => {
+                    updateUI(JSON.parse(event.data));
+                };
+
+                ws.onclose = () => {
+                    statusContainer.classList.remove('connected');
+                    statusText.textContent = "Disconnected";
+                    if (aiUpdateInterval) clearInterval(aiUpdateInterval);
+                    setTimeout(connectWS, 3000);
+                };
+            } catch (e) {
+                statusText.textContent = "Failed";
+            }
+        }
+
+        initCharts();
+    </script>
+</body>
+
+</html>
